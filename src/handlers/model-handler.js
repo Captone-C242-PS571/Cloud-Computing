@@ -1,12 +1,6 @@
-const { getFileMetadata, getFile } = require('../services/storage');
+const { getFileMetadata, getFile } = require("../services/storage.js");
 
-
-/**
- * Controller untuk mengunduh file model ML dari Google Cloud Storage
- * @param {Object} req
- * @param {Object} res
- */
-const downloadModel = async (req, res) => {
+async function downloadModel(req, res) {
   const { fileName } = req.params;
   try {
     const fileExists = await getFileMetadata(fileName);
@@ -23,6 +17,6 @@ const downloadModel = async (req, res) => {
     console.error("Error downloading file:", error.message);
     res.status(500).send({ message: "Error downloading file" });
   }
-};
+}
 
 module.exports = { downloadModel };

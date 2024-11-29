@@ -1,1 +1,2 @@
 export ACCESS_TOKEN_SECRET=""
+export GCS_BUCKET_NAME=""

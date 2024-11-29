@@ -1,19 +1,17 @@
 require("dotenv").config();
 
 const admin = require("firebase-admin");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
-function validateEmail(email) {
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return regex.test(email);
-}
-
-function validatePassword(password) {
-  const regex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  return regex.test(password);
-}
+const {
+  createUser,
+  saveUserToFirestore,
+  getUserFromFirestore,
+} = require("../services/firebase.js");
+const {
+  validateEmail,
+  validatePassword,
+} = require("../services/validation-input.js");
+const { generateToken } = require("../services/jwt-services.js");
 
 async function signup(req, res) {
   const { name: rawName, email, password } = req.body;
@@ -40,18 +38,9 @@ async function signup(req, res) {
   } catch (error) {
     if (error.code === "auth/user-not-found") {
       try {
-        const userRecord = await admin.auth().createUser({
-          email: email,
-          password: password,
-          displayName: name,
-        });
+        const userRecord = await createUser(email, password, name);
         const hashedPassword = await bcrypt.hash(password, 10);
-        await admin.firestore().collection("users").doc(userRecord.uid).set({
-          uid: userRecord.uid,
-          name: name,
-          email: email,
-          password: hashedPassword,
-        });
+        await saveUserToFirestore(userRecord.uid, name, email, hashedPassword);
         return res.status(200).json({ message: "Success" });
       } catch (error) {
         console.error("Error creating user: ", error);
@@ -77,32 +66,27 @@ async function login(req, res) {
   try {
     const userRecord = await admin.auth().getUserByEmail(email);
     const userId = userRecord.uid;
-    const userDoc = await admin
-      .firestore()
-      .collection("users")
-      .doc(userId)
-      .get();
+    const userDoc = await getUserFromFirestore(userId);
 
     if (!userDoc.exists) {
       return res.status(400).json({ message: "Email not registered" });
     }
-    const user = userDoc.data();
 
+    const user = userDoc.data();
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(400).json({ message: "Incorrect password" });
     }
 
-    const token = jwt.sign(
-      {
-        id: userId,
-        email: user.email,
-        name: user.name,
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "1d" }
+    const token = generateToken({
+      id: userId,
+      email: user.email,
+      name: user.name
+    },
+      process.env.ACCESS_TOKEN_SECRET
     );
     user.password = undefined;
+
     return res.json({
       message: "Success",
       data: user,
@@ -120,7 +104,7 @@ async function login(req, res) {
 async function getUser(req, res) {
   try {
     const { id } = req.user;
-    const userDoc = await admin.firestore().collection("users").doc(id).get();
+    const userDoc = await getUserFromFirestore(id);
 
     if (!userDoc.exists) {
       return res.status(404).json({
