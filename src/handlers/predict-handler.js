@@ -3,9 +3,9 @@ const admin = require("firebase-admin");
 const { format } = require("date-fns");
 
 const loadModel = require("../services/load-model");
-const { db, bucket } = require("../services/firebase");
+const { db, bucket } = require("../services/firebase-services");
 
-const predictForm = async (req, res) => {
+async function predictForm(req, res) {
   try {
     const model = await loadModel(process.env.MODEL_FORM);
     if (!model) {
@@ -66,7 +66,7 @@ const predictForm = async (req, res) => {
   }
 };
 
-const predictImage = async (req, res) => {
+async function predictImage(req, res) {
   try {
     const { id } = req.user;
     const model = await loadModel(process.env.MODEL_IMAGE);
