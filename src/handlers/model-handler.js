@@ -11,7 +11,7 @@ async function downloadModel(req, res) {
     const file = getFile(fileName);
     const downloadStream = file.createReadStream();
 
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.status(200).setHeader("Content-Disposition", `attachment; filename="${fileName}"`)
     downloadStream.pipe(res);
   } catch (error) {
     console.error("Error downloading file:", error.message);
@@ -19,4 +19,4 @@ async function downloadModel(req, res) {
   }
 }
 
-module.exports = downloadModel;
+module.exports = { downloadModel };
