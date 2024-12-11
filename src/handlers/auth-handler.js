@@ -1,26 +1,25 @@
 require("dotenv").config();
-
 const admin = require("firebase-admin");
 const bcrypt = require("bcrypt");
+
 const {
   createUser,
   saveUserToFirestore,
   getUserFromFirestore,
-} = require("../services/firebase.js");
+} = require("../services/firebase-services.js");
 const {
   validateEmail,
   validatePassword,
 } = require("../services/validation-input.js");
-const { generateToken } = require("../services/jwt-services.js");
+const generateToken = require("../services/jwt-services.js");
 
 async function signup(req, res) {
   const { name: rawName, email, password } = req.body;
-  const name = rawName.trim().replace(/\s+/g, " ");
 
   if (!validateEmail(email)) {
     return res.status(400).json({ message: "Invalid email address" });
   }
-  if (!name) {
+  if (!rawName) {
     return res.status(400).json({ message: "Invalid name" });
   }
   if (!validatePassword(password)) {
@@ -29,6 +28,8 @@ async function signup(req, res) {
         "Password must be 8+ characters with uppercase, lowercase, number, and special character",
     });
   }
+
+  const name = rawName.trim().replace(/\s+/g, " ");
 
   try {
     await admin.auth().getUserByEmail(email);
@@ -78,11 +79,12 @@ async function login(req, res) {
       return res.status(400).json({ message: "Incorrect password" });
     }
 
-    const token = generateToken({
-      id: userId,
-      email: user.email,
-      name: user.name
-    },
+    const token = generateToken(
+      {
+        id: userId,
+        email: user.email,
+        name: user.name,
+      },
       process.env.ACCESS_TOKEN_SECRET
     );
     user.password = undefined;

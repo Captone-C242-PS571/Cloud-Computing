@@ -1,4 +1,4 @@
-const { getFileMetadata, getFile } = require("../services/storage.js");
+const { getFileMetadata, getFile } = require("../services/storage-services.js");
 
 async function downloadModel(req, res) {
   const { fileName } = req.params;
@@ -19,4 +19,4 @@ async function downloadModel(req, res) {
   }
 }
 
-module.exports = { downloadModel };
+module.exports = downloadModel;
